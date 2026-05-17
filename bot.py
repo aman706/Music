@@ -1,7 +1,8 @@
 from pyrogram import Client, filters
 from pyrogram.types import Message
 from pytgcalls import PyTgCalls
-from pytgcalls.types.input_stream import AudioPiped
+from pytgcalls.types.input_stream.quality import HighQualityAudio
+from pytgcalls.types.input_stream import InputAudioStream
 import yt_dlp
 import asyncio
 import os
