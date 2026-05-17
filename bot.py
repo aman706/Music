@@ -1,18 +1,15 @@
-from pyrogram import Client, filters
-from pyrogram.types import Message
-from pytgcalls import idle
-
-from pytgcalls import PyTgCalls
+from hydrogram import Client, filters
+from hydrogram.types import Message
+from pytgcalls import PyTgCalls, idle
 from pytgcalls.types import MediaStream
-
 from flask import Flask
 from threading import Thread
-
 import yt_dlp
 import asyncio
 import os
 
-# =========================
+
+#=====
 # FLASK KEEP ALIVE
 # =========================
 
