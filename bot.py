@@ -62,17 +62,13 @@ def download_song(query):
     ydl_opts = {
         "format": "bestaudio/best",
         "outtmpl": "/tmp/song.%(ext)s",
-        "quiet": False,
-        "verbose": True,
+        "quiet": True,
         "noplaylist": True,
-        "geo_bypass": True,
         "nocheckcertificate": True,
         "cookiefile": "cookies.txt",
-        "source_address": "0.0.0.0",
         "extractor_args": {
             "youtube": {
-                "player_client": ["web"],
-                "skip": ["dash", "hls"]
+                "player_client": ["tv", "ios"],
             }
         },
     }
@@ -80,7 +76,7 @@ def download_song(query):
         try:
             info = ydl.extract_info(f"ytsearch1:{query}", download=True)
         except Exception as e:
-            raise Exception(f"yt-dlp error: {str(e)}")
+            raise Exception(f"Download failed: {str(e)}")
 
         if not info or "entries" not in info or not info["entries"]:
             raise Exception(f"No results for: {query}")
