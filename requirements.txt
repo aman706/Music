@@ -1,6 +1,6 @@
 pyrogram==2.0.106
 tgcrypto
-git+https://github.com/pytgcalls/pytgcalls.git@master
+pytgcalls==3.0.0.dev24
 yt-dlp
 python-dotenv
 flask
