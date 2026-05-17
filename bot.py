@@ -58,6 +58,7 @@ call_py = PyTgCalls(assistant)
 # DOWNLOAD SONG
 # =========================
 
+
 def download_song(query):
     ydl_opts = {
         "format": "bestaudio[ext=m4a]/bestaudio/best",
@@ -80,10 +81,18 @@ def download_song(query):
         }
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(f"ytsearch:{query}", download=True)
+        info = ydl.extract_info(f"ytsearch:{query}", download=False)
+
+        if not info or "entries" not in info or not info["entries"]:
+            raise Exception("No results found for your query.")
+
         entry = info["entries"][0]
-        file_path = ydl.prepare_filename(entry)
-        title = entry["title"]
+
+        # Re-extract with download=True using the direct URL
+        info2 = ydl.extract_info(entry["webpage_url"], download=True)
+        file_path = ydl.prepare_filename(info2)
+        title = info2.get("title", query)
+
     return file_path, title
 
 # =========================
