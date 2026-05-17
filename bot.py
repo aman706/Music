@@ -2,7 +2,7 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 
 from pytgcalls import PyTgCalls
-from pytgcalls.types.input_stream import InputAudioStream
+from pytgcalls.types.input_stream AudioPiped
 
 from flask import Flask
 from threading import Thread
@@ -132,7 +132,7 @@ async def play(_, message: Message):
 
         await call_py.join_group_call(
             message.chat.id,
-            InputAudioStream(file_path)
+            AudioPiped(file_path)
         )
 
         await msg.edit_text(
