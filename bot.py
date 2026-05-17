@@ -61,23 +61,33 @@ call_py = PyTgCalls(assistant)
 # =========================
 
 def download_song(query):
+    print(os.listdir("."))
+    print(os.path.exists("cookies.txt"))
 
+    
     ydl_opts = {
-        "format": "bestaudio[ext=m4a]/bestaudio/best",
-        "outtmpl": "song.%(ext)s",
-        "quiet": True,
-        "noplaylist": True,
-        "geo_bypass": True,
-        "nocheckcertificate": True,
-        "cookiefile": "cookies.txt",
-        "http_headers": {
-            "User-Agent": (
-                "Mozilla/5.0 (Linux; Android 13; "
-                "SM-S918B) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) Chrome/120.0.0.0 "
-                "Mobile Safari/537.36"
-            )
+    "format": "bestaudio[ext=m4a]/bestaudio/best",
+    "outtmpl": "song.%(ext)s",
+    "quiet": True,
+    "noplaylist": True,
+    "geo_bypass": True,
+    "nocheckcertificate": True,
+    "cookiefile": "cookies.txt",
+
+    "extractor_args": {
+        "youtube": {
+            "player_client": ["android"]
         }
+    },
+
+    "http_headers": {
+        "User-Agent": (
+            "Mozilla/5.0 (Linux; Android 13; "
+            "SM-S918B) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/120.0.0.0 "
+            "Mobile Safari/537.36"
+        )
+    }
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
