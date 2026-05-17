@@ -68,9 +68,10 @@ def download_song(query):
         "cookiefile": "cookies.txt",
         "extractor_args": {
             "youtube": {
-                "player_client": ["tv", "ios"],
+                "player_client": ["tv"],
             }
         },
+        "js_runtimes": {"node": {}},  # explicitly use node
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
