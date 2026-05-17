@@ -3,7 +3,7 @@ from hydrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 
 from pytgcalls import PyTgCalls, idle
 from pytgcalls.types import MediaStream, AudioQuality, VideoQuality
-from pytgcalls.exceptions import NoActiveGroupCall, AlreadyJoinedError
+from pytgcalls.exceptions import NoActiveGroupCall, PyTgCallsAlreadyRunning
 
 from flask import Flask
 from threading import Thread
@@ -202,7 +202,7 @@ async def play_next(chat_id, bot_client):
     try:
         await call_py.play(chat_id, stream)
 
-    except AlreadyJoinedError:
+    except PyTgCallsAlreadyRunning:
         try:
             await call_py.change_stream(chat_id, stream)
         except Exception:
