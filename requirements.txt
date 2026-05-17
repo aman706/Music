@@ -1,6 +1,7 @@
-pyrogram==2.0.106
-tgcrypto
-pytgcalls==3.0.0.dev24
+https://github.com/pytgcalls/pytgcalls/archive/dev.zip
+
+pyrogram==1.4.16
+tgcrypto==1.2.5
 yt-dlp
 python-dotenv
 ffmpeg-python
