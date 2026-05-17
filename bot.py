@@ -62,26 +62,33 @@ def download_song(query):
     ydl_opts = {
         "format": "bestaudio/best",
         "outtmpl": "/tmp/song.%(ext)s",
-        "quiet": False,  # turn on logging to see what's happening
+        "quiet": False,
+        "verbose": True,
         "noplaylist": True,
         "geo_bypass": True,
         "nocheckcertificate": True,
+        "cookiefile": "cookies.txt",
+        "source_address": "0.0.0.0",
         "extractor_args": {
-            "youtube": {"player_client": ["ios"]}  # try ios instead of android
+            "youtube": {
+                "player_client": ["web"],
+                "skip": ["dash", "hls"]
+            }
         },
-        "http_headers": {
-            "User-Agent": (
-                "com.google.ios.youtube/19.29.1 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X)"
-            )
-        }
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(f"ytsearch1:{query}", download=True)
+        try:
+            info = ydl.extract_info(f"ytsearch1:{query}", download=True)
+        except Exception as e:
+            raise Exception(f"yt-dlp error: {str(e)}")
 
         if not info or "entries" not in info or not info["entries"]:
-            raise Exception(f"No results found for: {query}")
+            raise Exception(f"No results for: {query}")
 
         entry = info["entries"][0]
+        if entry is None:
+            raise Exception("Search returned null entry")
+
         file_path = ydl.prepare_filename(entry)
         title = entry.get("title", query)
 
