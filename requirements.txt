@@ -1,6 +1,6 @@
 pyrogram==2.0.106
 tgcrypto
-pytgcalls==0.0.24
+pytgcalls==2.1.0
 yt-dlp
 python-dotenv
 flask
