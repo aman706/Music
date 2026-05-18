@@ -242,10 +242,11 @@ async def play_next(chat_id, bot_client):
 # STREAM END HANDLER
 # =========================
 
-@call_py.on_update(fl.stream_end)
-async def on_stream_end(_, update: Update):
-    if isinstance(update, (StreamAudioEnded, StreamVideoEnded)):
-        chat_id = update.chat_id
+# Temporary - catches all updates
+@call_py.on_update()
+async def on_any_update(_, update):
+    chat_id = getattr(update, 'chat_id', None)
+    if chat_id and 'Ended' in type(update).__name__:
         if get_queue(chat_id):
             await play_next(chat_id, bot)
         else:
