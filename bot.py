@@ -2,7 +2,7 @@ from hydrogram import Client, filters
 from hydrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 
 from pytgcalls import PyTgCalls, idle, filters as fl
-from pytgcalls.types import MediaStream, AudioQuality, VideoQuality, UpdateStreamVideoEnded
+from pytgcalls.types import MediaStream, AudioQuality, VideoQuality
 from pytgcalls.exceptions import NoActiveGroupCall, NotInCallError
 
 from flask import Flask
