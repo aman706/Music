@@ -4,7 +4,7 @@ from hydrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pytgcalls import PyTgCalls, idle, filters as fl
 from pytgcalls.types import MediaStream, AudioQuality, VideoQuality
 from pytgcalls.exceptions import NoActiveGroupCall, NotInCallError
-
+from pytgcalls.types.stream import StreamEnded
 from flask import Flask
 from threading import Thread
 
@@ -243,16 +243,16 @@ async def play_next(chat_id, bot_client):
 
 # Temporary - catches all updates
 @call_py.on_update()
-async def on_any_update(_, update):
-    chat_id = getattr(update, 'chat_id', None)
-    if chat_id and 'Ended' in type(update).__name__:
+async def on_stream_ended(_, update):
+    if isinstance(update, StreamEnded):
+        chat_id = update.chat_id
         if get_queue(chat_id):
             await play_next(chat_id, bot)
         else:
             try:
                 await call_py.leave_group_call(chat_id)
             except Exception:
-                pass
+
 
 # =========================
 # /start
