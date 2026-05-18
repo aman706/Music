@@ -252,7 +252,7 @@ async def on_stream_ended(_, update):
             try:
                 await call_py.leave_group_call(chat_id)
             except Exception:
-
+                pass
 
 # =========================
 # /start
