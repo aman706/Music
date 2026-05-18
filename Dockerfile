@@ -9,7 +9,9 @@ COPY . .
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Debug: print pytgcalls types so we know exact import paths
-RUN python -c "import pytgcalls.types.stream as s; print(dir(s))"
+# Install yt-dlp's JS challenge solver
+RUN pip install yt-dlp[default]
+RUN python -m yt_dlp_plugins.extractor || true
+RUN yt-dlp --install-compat-options || true
 
 CMD ["python", "bot.py"]
