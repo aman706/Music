@@ -11,7 +11,6 @@ from threading import Thread
 
 import yt_dlp
 import asyncio
-import subprocess
 import os
 
 # =========================
@@ -60,7 +59,7 @@ assistant = Client(
 call_py = PyTgCalls(assistant)
 
 # =========================
-# QUEUE & ACTIVE CALL TRACKING
+# QUEUE & STATE
 # =========================
 
 queues = {}
@@ -84,6 +83,13 @@ def clear_queue(chat_id):
 
 def is_active(chat_id):
     return chat_id in active_calls
+
+async def force_leave(chat_id):
+    active_calls.discard(chat_id)
+    try:
+        await call_py.leave_group_call(chat_id)
+    except Exception:
+        pass
 
 # =========================
 # DOWNLOAD AUDIO
@@ -118,13 +124,13 @@ def download_song(query):
         }
 
 # =========================
-# DOWNLOAD & PROCESS VIDEO
+# DOWNLOAD VIDEO (no re-encoding)
 # =========================
 
 def download_video(query):
     ydl_opts = {
-        "format": "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best",
-        "outtmpl": "/tmp/%(id)s_raw.%(ext)s",
+        "format": "bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/best[height<=480][ext=mp4]/best[height<=480]",
+        "outtmpl": "/tmp/%(id)s.%(ext)s",
         "quiet": True,
         "noplaylist": True,
         "nocheckcertificate": True,
@@ -142,31 +148,8 @@ def download_video(query):
         entry = info["entries"][0]
         if not entry:
             raise Exception("Search returned no results.")
-
-        raw_file = ydl.prepare_filename(entry)
-        video_id = entry.get("id", "video")
-        out_file = f"/tmp/{video_id}_out.mp4"
-
-        subprocess.run([
-            "ffmpeg", "-y",
-            "-i", raw_file,
-            "-vf", "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2",
-            "-c:v", "libx264",
-            "-preset", "ultrafast",
-            "-crf", "28",
-            "-c:a", "aac",
-            "-b:a", "128k",
-            "-movflags", "+faststart",
-            out_file
-        ], check=True, capture_output=True)
-
-        try:
-            os.remove(raw_file)
-        except Exception:
-            pass
-
         return {
-            "file": out_file,
+            "file": ydl.prepare_filename(entry),
             "title": entry.get("title", query),
             "duration": entry.get("duration", 0),
             "url": entry.get("webpage_url", ""),
@@ -210,38 +193,37 @@ def now_playing_buttons():
 async def play_next(chat_id, bot_client):
     item = pop_queue(chat_id)
     if not item:
-        active_calls.discard(chat_id)
-        try:
-            await call_py.leave_group_call(chat_id)
-        except Exception:
-            pass
+        await force_leave(chat_id)
         return
 
     stream = MediaStream(item["file"])
+    played = False
 
+    # First attempt
     try:
         await call_py.play(chat_id, stream)
         active_calls.add(chat_id)
-
+        played = True
     except NoActiveGroupCall:
-        active_calls.discard(chat_id)
-        await bot_client.send_message(
-            chat_id,
-            "❌ No active Voice Chat. Please start one in the group first."
-        )
+        await bot_client.send_message(chat_id, "❌ No active Voice Chat. Please start one first.")
         clear_queue(chat_id)
-        return
-
-    except Exception:
         active_calls.discard(chat_id)
-        try:
-            await call_py.leave_group_call(chat_id)
-        except Exception:
-            pass
-        await asyncio.sleep(1)
+        return
+    except Exception:
+        pass
+
+    # If first attempt failed, force leave and retry once
+    if not played:
+        await force_leave(chat_id)
+        await asyncio.sleep(2)
         try:
             await call_py.play(chat_id, stream)
             active_calls.add(chat_id)
+            played = True
+        except NoActiveGroupCall:
+            await bot_client.send_message(chat_id, "❌ No active Voice Chat. Please start one first.")
+            clear_queue(chat_id)
+            return
         except Exception as e:
             await bot_client.send_message(chat_id, f"❌ Failed to play: {e}")
             return
@@ -261,13 +243,11 @@ async def on_stream_ended(_, update):
     if isinstance(update, StreamEnded):
         chat_id = update.chat_id
         active_calls.discard(chat_id)
-        if get_queue(chat_id):
+        queue = get_queue(chat_id)
+        if queue:
             await play_next(chat_id, bot)
         else:
-            try:
-                await call_py.leave_group_call(chat_id)
-            except Exception:
-                pass
+            await force_leave(chat_id)
 
 # =========================
 # /start
@@ -347,13 +327,11 @@ async def vplay(_, message: Message):
 @bot.on_message(filters.command("skip"))
 async def skip(_, message: Message):
     chat_id = message.chat.id
-    if not get_queue(chat_id):
-        active_calls.discard(chat_id)
-        try:
-            await call_py.leave_group_call(chat_id)
-        except Exception:
-            pass
-        return await message.reply_text("⏹ Queue is empty. Leaving VC.")
+    queue = get_queue(chat_id)
+    if not queue:
+        await message.reply_text("⏹ No more songs. Leaving VC.")
+        await force_leave(chat_id)
+        return
     await message.reply_text("⏭ Skipping...")
     await play_next(chat_id, bot)
 
@@ -365,11 +343,7 @@ async def skip(_, message: Message):
 async def end(_, message: Message):
     chat_id = message.chat.id
     clear_queue(chat_id)
-    active_calls.discard(chat_id)
-    try:
-        await call_py.leave_group_call(chat_id)
-    except Exception:
-        pass
+    await force_leave(chat_id)
     await message.reply_text("🛑 Stopped and cleared the queue.")
 
 # =========================
@@ -400,13 +374,10 @@ async def callbacks(_, query):
 
     if query.data == "skip":
         await query.answer("Skipping...")
-        if not get_queue(chat_id):
-            active_calls.discard(chat_id)
-            try:
-                await call_py.leave_group_call(chat_id)
-            except Exception:
-                pass
-            await query.message.edit_text("⏹ Queue ended. Leaving VC.")
+        queue = get_queue(chat_id)
+        if not queue:
+            await force_leave(chat_id)
+            await query.message.edit_text("⏹ Queue ended. Left VC.")
         else:
             await query.message.edit_reply_markup(None)
             await play_next(chat_id, bot)
@@ -414,11 +385,7 @@ async def callbacks(_, query):
     elif query.data == "end":
         await query.answer("Stopping...")
         clear_queue(chat_id)
-        active_calls.discard(chat_id)
-        try:
-            await call_py.leave_group_call(chat_id)
-        except Exception:
-            pass
+        await force_leave(chat_id)
         await query.message.edit_text("🛑 Music stopped and queue cleared.")
 
 # =========================
